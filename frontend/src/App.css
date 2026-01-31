@@ -1,0 +1,88 @@
+/* App.css */
+
+/* Navbar */
+.navbar {
+  background-color: var(--navbar-bg);
+  border-bottom: 1px solid var(--border-color);
+  padding: 0.75rem 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.navbar-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Logo */
+.navbar-logo {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--accent-color);
+}
+
+/* Right section */
+.navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Language dropdown */
+.language-select {
+  padding: 0.45rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background-color: transparent;
+  color: var(--text-color);
+  transition: border 0.2s ease, background 0.2s ease;
+}
+
+.language-select:hover {
+  background-color: var(--hover-bg);
+}
+
+/* Dark mode toggle */
+.theme-toggle {
+  width: 42px;
+  height: 22px;
+  background-color: var(--border-color);
+  border-radius: 20px;
+  position: relative;
+  transition: background-color 0.3s ease;
+}
+
+.theme-toggle::after {
+  content: "";
+  width: 18px;
+  height: 18px;
+  background-color: #ffffff;
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.3s ease;
+}
+
+[data-theme="dark"] .theme-toggle {
+  background-color: var(--accent-color);
+}
+
+[data-theme="dark"] .theme-toggle::after {
+  transform: translateX(20px);
+}
+
+/* Main content */
+.main-content {
+  padding: 2rem 1rem;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .navbar-content {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}
