@@ -4,7 +4,7 @@ import VisualizationCanvas from "../components/VisualizationCanvas";
 import PlaybackControls from "../components/PlaybackControls";
 import "../styles/Visualizer.css";
 
-const API_URL = "http://localhost:3000";
+const API_URL = import.meta.env.VITE_API_URL;
 
 const CODE_TEMPLATES = {
     cpp: `#include <iostream>
