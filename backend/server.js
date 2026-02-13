@@ -12,53 +12,59 @@ import rateLimit from "express-rate-limit";
 // Load environment variables
 dotenv.config();
 
+// Controllers
 import executeController from "./controllers/executeController.js";
 import {
-    startDebugSession,
-    stepForward,
-    stepBackward,
-    getState,
-    endDebugSession,
+  startDebugSession,
+  stepForward,
+  stepBackward,
+  getState,
+  endDebugSession,
 } from "./controllers/debugController.js";
 
+// ESM dirname fix
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 5001;
+const NODE_ENV = process.env.NODE_ENV || "development";
 
-// Security & Performance Middleware
-app.use(helmet({
-    contentSecurityPolicy: {
-        directives: {
-            defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Relaxed for dev/Monaco editor
-            styleSrc: ["'self'", "'unsafe-inline'"],
-            imgSrc: ["'self'", "data:", "blob:"],
-            connectSrc: ["'self'"],
-        },
-    },
-}));
-app.use(compression());
-app.use(morgan("dev"));
+/* -------------------- SECURITY & PERFORMANCE -------------------- */
 
-// Rate Limiting
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 requests per windowMs
-});
-app.use(limiter);
-
-// Middleware
-app.use(cors());
-app.use(express.json({ limit: "10mb" }));
-
-// Serve frontend
+// Helmet (relaxed CSP for Monaco + Vite)
 app.use(
-    express.static(path.join(__dirname, "../frontend/dist"))
+  helmet({
+    contentSecurityPolicy: false, // 🔥 IMPORTANT: disable CSP to avoid Monaco issues
+    crossOriginEmbedderPolicy: false,
+  })
 );
 
-// Routes
+app.use(compression());
+app.use(morgan(NODE_ENV === "production" ? "combined" : "dev"));
+
+// Rate Limiting
+app.use(
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 200,
+    standardHeaders: true,
+    legacyHeaders: false,
+  })
+);
+
+/* -------------------- MIDDLEWARE -------------------- */
+
+app.use(
+  cors({
+    origin: "*", // tighten later if needed
+  })
+);
+
+app.use(express.json({ limit: "10mb" }));
+
+/* -------------------- API ROUTES -------------------- */
+
 app.post("/run", executeController);
 
 app.post("/api/debug/start", startDebugSession);
@@ -67,24 +73,33 @@ app.post("/api/debug/step-backward", stepBackward);
 app.post("/api/debug/get-state", getState);
 app.post("/api/debug/end", endDebugSession);
 
-// Health check (keep this ABOVE wildcard in future)
 app.get("/health", (req, res) => {
-    res.json({ status: "ok", message: "Server is running" });
+  res.json({ status: "ok", env: NODE_ENV });
 });
 
-// React fallback - Regex fix for Express 5 / latest path-to-regexp
-app.get(/(.*)/, (req, res) => {
-    res.sendFile(
-        path.join(__dirname, "../frontend/dist/index.html")
-    );
-});
+/* -------------------- FRONTEND SERVING -------------------- */
 
-// Global Error Handler
+// Only serve frontend in production (Docker / Render)
+if (NODE_ENV === "production") {
+  const frontendPath = path.join(__dirname, "../frontend/dist");
+
+  app.use(express.static(frontendPath));
+
+  // React / Vite fallback
+  app.get(/^(?!\/api|\/run|\/health).*/, (req, res) => {
+    res.sendFile(path.join(frontendPath, "index.html"));
+  });
+}
+
+/* -------------------- ERROR HANDLER -------------------- */
+
 app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).send("Something broke!");
+  console.error("❌ ERROR:", err);
+  res.status(500).json({ error: "Internal Server Error" });
 });
+
+/* -------------------- START SERVER -------------------- */
 
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT} (${NODE_ENV})`);
 });
