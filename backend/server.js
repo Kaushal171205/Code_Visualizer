@@ -28,7 +28,7 @@ const __dirname = dirname(__filename);
 
 // App config
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 const NODE_ENV = process.env.NODE_ENV || "development";
 
 /* -------------------- SECURITY & PERFORMANCE -------------------- */
