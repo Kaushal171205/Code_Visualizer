@@ -1,40 +1,45 @@
-# Use Ubuntu base
+# Stage 1: Build Frontend
+FROM node:18-alpine AS frontend-builder
+WORKDIR /app/frontend
+COPY frontend/package*.json ./
+RUN npm ci
+COPY frontend/ .
+RUN npm run build
+
+# Stage 2: Final Runtime System
 FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install system dependencies
+# Install system dependencies (Compilers & Runtime)
 RUN apt-get update && apt-get install -y \
+    curl \
+    gnupg \
     build-essential \
     clang \
     g++ \
-    curl \
+    openjdk-17-jdk-headless \
+    python3 \
+    && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+    && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Node (official way)
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
-    && apt-get install -y nodejs
-
-# Set working directory
 WORKDIR /app
 
-# Copy everything
-COPY . .
-
-# Install backend dependencies
+# Setup Backend
+COPY backend/package*.json ./backend/
 WORKDIR /app/backend
-RUN npm install
+RUN npm ci --only=production
 
-# Build frontend
-WORKDIR /app/frontend
-RUN npm install
-RUN npm run build
+# Copy Backend Source
+COPY backend/ .
 
-# Go back to backend
-WORKDIR /app/backend
+# Copy Built Frontend from Stage 1
+COPY --from=frontend-builder /app/frontend/dist ../frontend/dist
 
-# Expose port
+# Environment & Start
+ENV PORT=5000
+ENV NODE_ENV=production
 EXPOSE 5000
 
-# Start backend
 CMD ["node", "server.js"]

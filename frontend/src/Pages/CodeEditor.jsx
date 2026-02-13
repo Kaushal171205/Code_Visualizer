@@ -28,7 +28,7 @@ int main() {
 }
 `,
 };
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
 
 const CodeEditor = ({ theme, language, code, setCode }) => {
   const [input, setInput] = useState("");
@@ -92,7 +92,7 @@ const CodeEditor = ({ theme, language, code, setCode }) => {
       setExecutionStatus("error");
       if (error.message.includes("Failed to fetch")) {
         setOutput(
-          "❌ Connection Error\n\nCannot connect to the server. Please make sure the backend server is running on http://localhost:3000"
+          "❌ Connection Error\n\nCannot connect to the server. Please make sure the backend server is running on http://localhost:5001"
         );
       } else {
         setOutput(`❌ Error: ${error.message}`);
