@@ -26,16 +26,17 @@ import {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// App config
 const app = express();
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 5000;
 const NODE_ENV = process.env.NODE_ENV || "development";
 
 /* -------------------- SECURITY & PERFORMANCE -------------------- */
 
-// Helmet (relaxed CSP for Monaco + Vite)
+// Helmet – relaxed for Monaco & Vite
 app.use(
   helmet({
-    contentSecurityPolicy: false, // 🔥 IMPORTANT: disable CSP to avoid Monaco issues
+    contentSecurityPolicy: false,
     crossOriginEmbedderPolicy: false,
   })
 );
@@ -43,7 +44,7 @@ app.use(
 app.use(compression());
 app.use(morgan(NODE_ENV === "production" ? "combined" : "dev"));
 
-// Rate Limiting
+// Rate limiting
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -57,7 +58,7 @@ app.use(
 
 app.use(
   cors({
-    origin: "*", // tighten later if needed
+    origin: "*",
   })
 );
 
@@ -79,17 +80,15 @@ app.get("/health", (req, res) => {
 
 /* -------------------- FRONTEND SERVING -------------------- */
 
-// Only serve frontend in production (Docker / Render)
-if (NODE_ENV === "production") {
-  const frontendPath = path.join(__dirname, "../frontend/dist");
+const frontendPath = path.join(__dirname, "../frontend/dist");
 
-  app.use(express.static(frontendPath));
+// Serve static frontend only if it exists (Docker / Render)
+app.use(express.static(frontendPath));
 
-  // React / Vite fallback
-  app.get(/^(?!\/api|\/run|\/health).*/, (req, res) => {
-    res.sendFile(path.join(frontendPath, "index.html"));
-  });
-}
+// React / Vite fallback (don’t break APIs)
+app.get(/^(?!\/api|\/run|\/health).*/, (req, res) => {
+  res.sendFile(path.join(frontendPath, "index.html"));
+});
 
 /* -------------------- ERROR HANDLER -------------------- */
 
@@ -100,6 +99,6 @@ app.use((err, req, res, next) => {
 
 /* -------------------- START SERVER -------------------- */
 
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on port ${PORT} (${NODE_ENV})`);
 });
